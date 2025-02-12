@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ProductsManager": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
