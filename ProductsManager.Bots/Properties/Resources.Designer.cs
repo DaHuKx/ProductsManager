@@ -59,32 +59,5 @@ namespace ProductsManager.Bots.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Ищет локализованную строку, похожую на 456.
-        /// </summary>
-        internal static string TgAccessToken {
-            get {
-                return ResourceManager.GetString("TgAccessToken", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Ищет локализованную строку, похожую на vk1.a.mXADeRFWfdl308NfryJU1LVbRHlgwsvKmd22vV0u4340reunmDxMRMPoijHrY9qk1yhavXWLGoqf1O7jd9tJHBqGP1eKOHV_keZEx9lC7y7OcEiN-PHkSe7mh7cipAzIjJVBHcUcHY3-dwzKg6VDX8bRr64dm6aUsjI9J9jZIfbhS8Jk0x9vK_aNb63tENWmCdktIOofLOmZ7u8k2l7UQw.
-        /// </summary>
-        internal static string VkAccessToken {
-            get {
-                return ResourceManager.GetString("VkAccessToken", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Ищет локализованную строку, похожую на 229181461.
-        /// </summary>
-        internal static string VkGroupId {
-            get {
-                return ResourceManager.GetString("VkGroupId", resourceCulture);
-            }
-        }
     }
 }

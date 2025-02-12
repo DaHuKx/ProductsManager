@@ -117,13 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="TgAccessToken" xml:space="preserve">
-    <value>456</value>
-  </data>
-  <data name="VkAccessToken" xml:space="preserve">
-    <value>vk1.a.mXADeRFWfdl308NfryJU1LVbRHlgwsvKmd22vV0u4340reunmDxMRMPoijHrY9qk1yhavXWLGoqf1O7jd9tJHBqGP1eKOHV_keZEx9lC7y7OcEiN-PHkSe7mh7cipAzIjJVBHcUcHY3-dwzKg6VDX8bRr64dm6aUsjI9J9jZIfbhS8Jk0x9vK_aNb63tENWmCdktIOofLOmZ7u8k2l7UQw</value>
-  </data>
-  <data name="VkGroupId" xml:space="preserve">
-    <value>229181461</value>
-  </data>
 </root>
