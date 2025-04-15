@@ -39,6 +39,16 @@ namespace ProductsManager.Bots.Helpers
                                         "1 10\n" +
                                         "2 15";
 
+        public const string SetImportExport = "Пиши цену в формате:\n" +
+                                              "(Id товара) (Цена)\n\n" +
+                                              "Примеры:\n" +
+                                              "1 1000,50\n" +
+                                              "--------------------\n" +
+                                              "1 1099\n" +
+                                              "2 1500";
+
+        public const string Reports = "Выбирай тип отчёта 🤓";
+
         static BotAnswersConsts()
         {
             _random = new Random();

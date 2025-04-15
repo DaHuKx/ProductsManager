@@ -6,6 +6,9 @@
         Menu,
         AddProduct,
         AddImport,
-        AddExport
+        AddExport,
+        SetImport,
+        SetExport,
+        Reports
     }
 }

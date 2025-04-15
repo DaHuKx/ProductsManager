@@ -1,8 +1,9 @@
-﻿using ProductsManager.Bots.Clients;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using ProductsManager.Bots.Clients;
 using ProductsManager.Bots.Helpers;
 using ProductsManager.Bots.Interfaces;
 using ProductsManager.Bots.Models;
-using ProductsManager.Bots.Properties;
 using ProductsManager.Infrastructure.DataBase.Entities;
 using ProductsManager.Infrastructure.DataBase.Enums;
 using ProductsManager.Infrastructure.Repositories.Interfaces;
@@ -11,20 +12,28 @@ namespace ProductsManager.Bots
 {
     public class BotsManager
     {
+        private readonly ILogger<BotsManager> _logger;
+        private readonly IOptionsMonitor<BotsSettings> _optionsMonitor;
         private readonly IUsersRepository _botRepository;
         private readonly BotMessageResolver _botMessageResolver;
 
         private Dictionary<BotType, IBot> _bots;
 
         public BotsManager(IUsersRepository botRepository,
-                           BotMessageResolver botMessageResolver)
+                           BotMessageResolver botMessageResolver,
+                           IOptionsMonitor<BotsSettings> optionsMonitor,
+                           ILogger<BotsManager> logger)
         {
+            _optionsMonitor = optionsMonitor;
             _botRepository = botRepository;
             _botMessageResolver = botMessageResolver;
+            _logger = logger;
 
             _bots = new Dictionary<BotType, IBot>
             {
-                { BotType.Vk, new VkBot(Resources.VkAccessToken) }
+                { BotType.Vk, new VkBot(_optionsMonitor.CurrentValue.VkAccessToken,
+                                        _optionsMonitor.CurrentValue.VkGroupId,
+                                        _logger) }
             };
 
             foreach (var bot in _bots.Values)
@@ -47,6 +56,8 @@ namespace ProductsManager.Bots
 
         private async void NewMessageAsync(BotMessage message)
         {
+            _logger.LogInformation($"New message: UserID:{message.UserId}\n BotType:{message.BotType}\n Message:{message.Message}\n\n");
+
             var user = _botRepository.GetByNetId(message.BotType, message.UserId);
 
             if (user is null)
@@ -60,7 +71,7 @@ namespace ProductsManager.Bots
 
                 if (user is null)
                 {
-                    //TODO: Logger
+                    _logger.LogError($"User didn't added in DataBase - Type:{message.BotType}, Id:{message.UserId}");
                     return;
                 }
             }
@@ -69,10 +80,10 @@ namespace ProductsManager.Bots
 
             var expectedMessages = UserMessagesConsts.GetExpectedMessages(user.Place);
 
-            if (
-                expectedMessages is not null &&
+            if (expectedMessages is not null &&
                 expectedMessages.Count > 0 &&
-               !expectedMessages.Contains(message.Message))
+               !expectedMessages.Contains(message.Message) &&
+               !UserMessagesConsts.IsPlaceWithWriting(user.Place))
             {
                 answer = new BotMessage
                 {

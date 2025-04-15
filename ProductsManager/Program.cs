@@ -1,32 +1,73 @@
-﻿//var serviceProvider = new ServiceCollection();
-
-//serviceProvider.AddDbContext<ProductsManagerDb>();
-
-//serviceProvider.AddSingleton<IProductsService, ProductsService>();
-
-//serviceProvider.AddTransient<IProductsRepository, ProductsRepository>();
-//serviceProvider.AddTransient<IUsersRepository, UsersRepository>();
-
-//serviceProvider.AddSingleton<BotsManager>();
-//serviceProvider.AddSingleton<BotMessageResolver>();
-
-//var build = serviceProvider.BuildServiceProvider();
-
-//var app = build.GetService<BotsManager>();
-
-//await app!.RunBots();
-
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using ProductsManager.Bots;
+using ProductsManager.Bots.Interfaces;
+using ProductsManager.Bots.MessageHandlers;
 using ProductsManager.Bots.Reporters;
+using ProductsManager.Business.Services;
+using ProductsManager.Business.Services.Interfaces;
 using ProductsManager.Infrastructure.DataBase;
 using ProductsManager.Infrastructure.Repositories;
+using ProductsManager.Infrastructure.Repositories.Interfaces;
 
-ProductsRepository productsRepository = new ProductsRepository(new ProductsManagerDb());
+IConfiguration configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
+                                                         .AddJsonFile("appsettings.json")
+                                                         .Build();
 
-var trades = await productsRepository.GetTradesWithProductsAsync();
+var serviceProvider = new ServiceCollection();
 
-ProductsReporter productsReporter = new ProductsReporter();
-TradesReporter tradesReporter = new TradesReporter();
+serviceProvider.Configure<BotsSettings>(configuration.GetSection("BotsSettings"));
 
-Console.WriteLine(tradesReporter.CreateTradesReport(trades));
+serviceProvider.AddLogging(ConfigureLogging);
+
+serviceProvider.AddDbContext<ProductsManagerDb>();
+
+serviceProvider.AddSingleton<IProductsService, ProductsService>();
+
+serviceProvider.AddTransient<IProductsRepository, ProductsRepository>();
+serviceProvider.AddTransient<IUsersRepository, UsersRepository>();
+
+serviceProvider.AddSingleton<BotsManager>();
+serviceProvider.AddSingleton<BotMessageResolver>();
+
+serviceProvider.AddTransient<ProductsReporter>();
+
+serviceProvider.AddSingleton<IMessageHandler, ReportsMessageHandler>();
+serviceProvider.AddSingleton<IMessageHandler, MenuMessageHandler>();
+serviceProvider.AddSingleton<IMessageHandler, StartMessageHandler>();
+serviceProvider.AddSingleton<IMessageHandler, AddProductsMessageHandler>();
+serviceProvider.AddSingleton<IMessageHandler, AddExportsMessageHandler>();
+serviceProvider.AddSingleton<IMessageHandler, AddImportsMessageHandler>();
+serviceProvider.AddSingleton<IMessageHandler, SetImportPriceHandler>();
+serviceProvider.AddSingleton<IMessageHandler, SetExportPriceHandler>();
+
+
+var build = serviceProvider.BuildServiceProvider();
+
+var app = build.GetService<BotsManager>();
+
+await app!.RunBots();
+
+void ConfigureLogging(ILoggingBuilder configure)
+{
+    configure.ClearProviders();
+    configure.AddConsole();
+
+    configure.SetMinimumLevel(LogLevel.Information);
+}
+
+//using ProductsManager.Bots.Reporters;
+//using ProductsManager.Infrastructure.DataBase;
+//using ProductsManager.Infrastructure.Repositories;
+
+//ProductsRepository productsRepository = new ProductsRepository(new ProductsManagerDb());
+
+//var trades = await productsRepository.GetTradesWithProductsAsync();
+
+//ProductsReporter productsReporter = new ProductsReporter();
+//TradesReporter tradesReporter = new TradesReporter();
+
+//Console.WriteLine(tradesReporter.CreateTradesReport(trades));
 
 

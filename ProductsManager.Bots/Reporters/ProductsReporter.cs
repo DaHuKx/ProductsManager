@@ -6,14 +6,11 @@ namespace ProductsManager.Bots.Reporters
 {
     public class ProductsReporter : ReporterBase
     {
-        public string? CreateProductTradeHistory(Product product)
+        public string? CreateProductsReport(List<Product> products)
         {
-            if (product.Trades is null || product.Trades.Count < 1)
-            {
-                return null;
-            }
+            var time = DateTime.UtcNow;
 
-            var path = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), $"/Excels/ProductReport-{DateTime.UtcNow:yyyy-MM-dd HH-mm-ss}.xlsx"));
+            var path = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), $"/Excels/StorageReport-{time:yyyy-MM-dd HH-mm-ss}.xlsx"));
 
             var directory = Directory.GetParent(path);
 
@@ -24,25 +21,43 @@ namespace ProductsManager.Bots.Reporters
 
             using (XLWorkbook workbook = new XLWorkbook())
             {
-                IXLWorksheet worksheet = workbook.AddWorksheet($"Report for product {product.Id}");
+                IXLWorksheet worksheet = workbook.AddWorksheet($"Склад {time:dd-MM-yyyy}");
 
-                var trades = product.Trades.OrderBy(t => t.TimeStamp);
-
-                WriteColumn(worksheet, 1, "Тип торговли", trades.Select(t => t.Type == TradeType.Import ? "Закупка" : "Продажа"));
-                WriteColumn(worksheet, 2, "Закуплено/Продано", trades.Select(t => t.Count.ToString()));
-                WriteColumn(worksheet, 3, "Время торговли", trades.Select(t => t.TimeStamp.ToString("dd.MM.yyyy HH:mm:ss")));
-
-                var imports = trades.Where(t => t.Type == TradeType.Import).Sum(t => t.Count);
-                var exports = trades.Where(t => t.Type == TradeType.Export).Sum(t => t.Count);
-
-                WriteColumn(worksheet, 5, "Id Продукта", [trades.First().Product!.Id.ToString()]);
-                WriteColumn(worksheet, 6, "Название продукта", [trades.First().Product!.Name]);
-                WriteColumn(worksheet, 7, "Остатки товара", [$"{imports - exports}шт."]);
+                WriteColumn(worksheet, 1, "Id Продукта", products.Select(p => p.Id.ToString()));
+                WriteColumn(worksheet, 2, "Название товара", products.Select(p => p.Name));
+                WriteColumn(worksheet, 3, "Остаток на складе", products.Select(p => GetStockForProduct(p).ToString()));
+                WriteColumn(worksheet, 4, "Цена закупки", products.Select(p => p.ImportPrice?.ToString() ?? "Не указано"));
+                WriteColumn(worksheet, 5, "Цена продажи", products.Select(p => p.ExportPrice?.ToString() ?? "Не указано"));
 
                 workbook.SaveAs(path);
 
                 return path;
             }
+        }
+
+        private int GetStockForProduct(Product product)
+        {
+            if (product.Trades is null ||
+                product.Trades.Count == 0)
+            {
+                return 0;
+            }
+
+            var imports = product.Trades.Where(t => t.Type == TradeType.Import);
+
+            if (!imports.Any())
+            {
+                return 0;
+            }
+
+            var exports = product.Trades.Where(t => t.Type == TradeType.Export);
+
+            if (!exports.Any())
+            {
+                return imports.Count();
+            }
+
+            return imports.Sum(i => i.Count) - exports.Sum(e => e.Count);
         }
     }
 }

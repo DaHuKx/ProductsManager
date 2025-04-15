@@ -7,84 +7,95 @@ namespace ProductsManager.Infrastructure.Repositories
 {
     public abstract class RepositoryBase<T> : IRepositoryBase<T> where T : BaseDbEntity
     {
-        protected readonly ProductsManagerDb Context;
-
-        public RepositoryBase(ProductsManagerDb productsManager)
-        {
-            Context = productsManager;
-        }
-
         public virtual async Task<T?> GetAsync(int id)
         {
-            return await Context.Set<T>().FirstOrDefaultAsync(v => v.Id == id);
+            using (ProductsManagerDb context = new ProductsManagerDb())
+            {
+                return await context.Set<T>().FirstOrDefaultAsync(v => v.Id == id);
+            }
         }
 
         public virtual async Task<List<T>> GetAllAsync()
         {
-            return await Context.Set<T>().ToListAsync();
+            using (ProductsManagerDb context = new ProductsManagerDb())
+            {
+                return await context.Set<T>().ToListAsync();
+            }
         }
 
         public virtual async Task<T?> AddAsync(T value)
         {
-            try
+            using (ProductsManagerDb context = new ProductsManagerDb())
             {
-                await Context.Set<T>().AddAsync(value);
-                await Context.SaveChangesAsync();
+                try
+                {
+                    await context.Set<T>().AddAsync(value);
+                    await context.SaveChangesAsync();
 
-                return value;
-            }
-            catch
-            {
-                return null;
+                    return value;
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 
         public virtual T? Add(T value)
         {
-            try
+            using (ProductsManagerDb context = new ProductsManagerDb())
             {
-                Context.Set<T>().Add(value);
-                Context.SaveChanges();
+                try
+                {
+                    context.Set<T>().Add(value);
+                    context.SaveChanges();
 
-                return value;
-            }
-            catch
-            {
-                return null;
+                    return value;
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 
         public virtual async Task<IEnumerable<T>?> AddRangeAsync(IEnumerable<T> values)
         {
-            try
+            using (ProductsManagerDb context = new ProductsManagerDb())
             {
-                await Context.Set<T>().AddRangeAsync(values);
-                await Context.SaveChangesAsync();
+                try
+                {
+                    await context.Set<T>().AddRangeAsync(values);
+                    await context.SaveChangesAsync();
 
-                return values;
-            }
-            catch
-            {
-                return null;
+                    return values;
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 
         public virtual T? Remove(int id)
         {
-            var value = Context.Set<T>().FirstOrDefault(v => v.Id == id);
-
-            if (value == null) return null;
-
-            try
+            using (ProductsManagerDb context = new ProductsManagerDb())
             {
-                Context.Set<T>().Remove(value);
-                Context.SaveChanges();
+                var value = context.Set<T>().FirstOrDefault(v => v.Id == id);
 
-                return value;
-            }
-            catch
-            {
-                return null;
+                if (value == null) return null;
+
+                try
+                {
+                    context.Set<T>().Remove(value);
+                    context.SaveChanges();
+
+                    return value;
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
     }

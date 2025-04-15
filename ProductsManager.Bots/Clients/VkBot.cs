@@ -1,16 +1,22 @@
-﻿using ProductsManager.Bots.Interfaces;
+﻿using Microsoft.Extensions.Logging;
+using ProductsManager.Bots.Interfaces;
 using ProductsManager.Bots.Models;
-using ProductsManager.Bots.Properties;
 using ProductsManager.Infrastructure.DataBase.Enums;
+using System.Net.Http.Headers;
+using System.Text;
 using VkNet;
 using VkNet.Enums.Filters;
 using VkNet.Enums.StringEnums;
+using VkNet.Exception;
 using VkNet.Model;
 
 namespace ProductsManager.Bots.Clients
 {
     public class VkBot : BotBase, IBot
     {
+        private readonly ulong _groupId;
+        private readonly ILogger _logger;
+
         private readonly VkApi _api;
         private readonly Random _random;
 
@@ -18,15 +24,18 @@ namespace ProductsManager.Bots.Clients
 
         public event BotMessageHandler? OnGotMessage;
 
-        public VkBot()
+        public VkBot(ulong groupId, ILogger logger)
         {
             BotType = BotType.Vk;
 
+            _groupId = groupId;
             _random = new Random();
             _api = new VkApi();
+
+            _logger = logger;
         }
 
-        public VkBot(string accessToken) : this()
+        public VkBot(string accessToken, ulong groupId, ILogger logger) : this(groupId, logger)
         {
             _api!.Authorize(new ApiAuthParams
             {
@@ -55,8 +64,33 @@ namespace ProductsManager.Bots.Clients
         {
             if (!_api.IsAuthorized)
             {
-                //TODO: Logger
+                _logger.LogError("Bot not authorized.");
                 return;
+            }
+
+            List<MediaAttachment>? attachments = null;
+            if (!string.IsNullOrEmpty(message.DocumentPath))
+            {
+                var server = await _api.Docs.GetMessagesUploadServerAsync(long.Parse(message.UserId), DocMessageType.Doc);
+
+                var response = await UploadFile(server.UploadUrl, message.DocumentPath, Path.GetExtension(message.DocumentPath));
+
+                string title = Path.GetFileName(message.DocumentPath);
+
+                try
+                {
+                    attachments = new List<MediaAttachment>
+                    {
+                        _api.Docs.Save(response, title ?? Guid.NewGuid().ToString(), null)
+                                 .First()
+                                 .Instance
+                    };
+                }
+                catch (Exception ex)
+                {
+                    message.Message = "Ошибка во время отправки файла на сервер. Попробуй позже. 🚫";
+                    _logger.LogError($"UploadFile error: {ex.Message}, User: {message.UserId}");
+                }
             }
 
             await _api.Messages.SendAsync(new MessagesSendParams
@@ -64,7 +98,8 @@ namespace ProductsManager.Bots.Clients
                 Message = message.Message,
                 UserId = long.Parse(message.UserId),
                 RandomId = _random.Next(),
-                Keyboard = message.KeyboardTexts is null ? default : CreateKeyboard(message.KeyboardTexts)
+                Keyboard = message.KeyboardTexts is null ? default : CreateKeyboard(message.KeyboardTexts),
+                Attachments = attachments
             });
         }
 
@@ -74,9 +109,9 @@ namespace ProductsManager.Bots.Clients
             {
                 try
                 {
-                    var response = GetBotsLongPollHistoryResponse();
+                    var response = await GetBotsLongPollHistoryResponseAsync();
 
-                    if (response.Updates is null || response.Updates.Count == 0)
+                    if (response?.Updates is null || response.Updates.Count == 0)
                     {
                         Thread.Sleep(1000);
                         continue;
@@ -87,9 +122,9 @@ namespace ProductsManager.Bots.Clients
                         CheckUpdate(update);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    //TODO: Logger.
+                    _logger.LogError($"Long poll getting error - {ex.Message}");
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(1));
@@ -112,23 +147,38 @@ namespace ProductsManager.Bots.Clients
             });
         }
 
-        private BotsLongPollHistoryResponse GetBotsLongPollHistoryResponse()
+        private async Task<BotsLongPollHistoryResponse> GetBotsLongPollHistoryResponseAsync()
         {
-            var pollResponse = _api.Groups.GetLongPollServer(ulong.Parse(Resources.VkGroupId));
+            var pollResponse = await _api.Groups.GetLongPollServerAsync(_groupId);
 
             BotsLongPollHistoryResponse response;
 
-            response = _api.Groups.GetBotsLongPollHistory(new BotsLongPollHistoryParams
+            try
             {
-                Server = pollResponse.Server,
-                Ts = _ts ?? pollResponse.Ts,
-                Key = pollResponse.Key,
-                Wait = 90
-            });
+                response = await _api.Groups.GetBotsLongPollHistoryAsync(new BotsLongPollHistoryParams
+                {
+                    Server = pollResponse.Server,
+                    Ts = _ts ?? pollResponse.Ts,
+                    Key = pollResponse.Key,
+                    Wait = 90
+                });
 
-            _ts = response.Ts;
+                _ts = response.Ts;
 
-            return response;
+                return response;
+            }
+            catch (LongPollOutdateException outDateEx)
+            {
+                _ts = outDateEx.Ts;
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                var type = ex.GetType();
+
+                return null;
+            }
         }
 
         private MessageKeyboard CreateKeyboard(List<string> texts)
@@ -155,6 +205,24 @@ namespace ProductsManager.Bots.Clients
             builder.AddButton(GetButton(lastText));
 
             return builder.Build();
+        }
+
+        private async Task<string> UploadFile(string serverUrl, string file, string fileExtension)
+        {
+            // Получение массива байтов из файла
+            var data = File.ReadAllBytes(file);
+
+            // Создание запроса на загрузку файла на сервер
+            using (var client = new HttpClient())
+            {
+                var requestContent = new MultipartFormDataContent();
+                var content = new ByteArrayContent(data);
+                content.Headers.ContentType = MediaTypeHeaderValue.Parse("multipart/form-data");
+                requestContent.Add(content, "file", $"file.{fileExtension}");
+
+                var response = client.PostAsync(serverUrl, requestContent).Result;
+                return Encoding.Default.GetString(await response.Content.ReadAsByteArrayAsync());
+            }
         }
     }
 }

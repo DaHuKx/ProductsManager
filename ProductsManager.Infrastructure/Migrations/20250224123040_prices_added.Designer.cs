@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ProductsManager.Infrastructure.DataBase;
@@ -11,9 +12,11 @@ using ProductsManager.Infrastructure.DataBase;
 namespace ProductsManager.Infrastructure.Migrations
 {
     [DbContext(typeof(ProductsManagerDb))]
-    partial class ProductsManagerDbModelSnapshot : ModelSnapshot
+    [Migration("20250224123040_prices_added")]
+    partial class prices_added
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,10 +33,7 @@ namespace ProductsManager.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal?>("ExportPrice")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal?>("ImportPrice")
+                    b.Property<decimal>("CurrentPrice")
                         .HasColumnType("numeric");
 
                     b.Property<string>("Name")

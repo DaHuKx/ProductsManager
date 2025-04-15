@@ -7,25 +7,26 @@ namespace ProductsManager.Infrastructure.Repositories
 {
     public class UsersRepository : RepositoryBase<BotUser>, IUsersRepository
     {
-        public UsersRepository(ProductsManagerDb productsManager) : base(productsManager)
-        {
-
-        }
-
         public BotUser? GetByNetId(BotType type, string netId)
         {
-            return Context.BotUsers.FirstOrDefault(u => u.BotType == type && u.NetId == netId);
+            using (ProductsManagerDb context = new ProductsManagerDb())
+            {
+                return context.BotUsers.FirstOrDefault(u => u.BotType == type && u.NetId == netId);
+            }
         }
 
         public async Task<BotUser?> UpdateUserPlaceAsync(BotUser user, UserPlace place)
         {
-            var dbUser = Context.BotUsers.First(u => u.Id == user.Id);
+            using (ProductsManagerDb context = new ProductsManagerDb())
+            {
+                var dbUser = context.BotUsers.First(u => u.Id == user.Id);
 
-            dbUser.Place = place;
+                dbUser.Place = place;
 
-            await Context.SaveChangesAsync();
+                await context.SaveChangesAsync();
 
-            return dbUser;
+                return dbUser;
+            }
         }
     }
 }

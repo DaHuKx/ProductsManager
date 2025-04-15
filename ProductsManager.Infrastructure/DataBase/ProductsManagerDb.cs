@@ -21,7 +21,7 @@ namespace ProductsManager.Infrastructure.DataBase
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql("Server=localhost;Port=5432;Database=ProjectManager;User Id=postgres;Password=w3s4m1p3;");
+            optionsBuilder.UseNpgsql("Server=localhost;Port=5432;Database=ProductsManager;User Id=postgres;Password=w3s4m1p3;");
         }
     }
 }

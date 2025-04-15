@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ProductsManager.Domain.DbEntities;
+using ProductsManager.Domain.Enums;
 using ProductsManager.Infrastructure.DataBase;
 using ProductsManager.Infrastructure.Repositories.Interfaces;
 
@@ -7,58 +8,99 @@ namespace ProductsManager.Infrastructure.Repositories
 {
     public class ProductsRepository : RepositoryBase<Product>, IProductsRepository
     {
-        public ProductsRepository(ProductsManagerDb productsManager) : base(productsManager)
-        {
-
-        }
-
         #region Get
         public async Task<List<Product>> GetAllProductsWithTradesAsync()
         {
-            return await Context.Products.Include(p => p.Trades).ToListAsync();
+            using (ProductsManagerDb context = new ProductsManagerDb())
+            {
+                return await context.Products.Include(p => p.Trades).ToListAsync();
+            }
         }
 
         public async Task<Product?> GetProductWithTradesAsync(int id)
         {
-            return await Context.Products.Include(p => p.Trades).FirstOrDefaultAsync(p => p.Id == id);
+            using (ProductsManagerDb context = new ProductsManagerDb())
+            {
+                return await context.Products.Include(p => p.Trades).FirstOrDefaultAsync(p => p.Id == id);
+            }
         }
 
         public async Task<List<Trade>> GetTradesWithProductsAsync()
         {
-            return await Context.Trades.Include(t => t.Product).ToListAsync();
+            using (ProductsManagerDb context = new ProductsManagerDb())
+            {
+                return await context.Trades.Include(t => t.Product).ToListAsync();
+            }
         }
         #endregion
 
         #region Add
         public async Task<Trade?> AddTradeAsync(Trade trade)
         {
-            try
+            using (ProductsManagerDb context = new ProductsManagerDb())
             {
-                await Context.Trades.AddAsync(trade);
-                await Context.SaveChangesAsync();
+                try
+                {
+                    await context.Trades.AddAsync(trade);
+                    await context.SaveChangesAsync();
 
-                trade.Product = Context.Products.First(p => p.Id == trade.ProductId);
+                    trade.Product = context.Products.First(p => p.Id == trade.ProductId);
 
-                return trade;
-            }
-            catch
-            {
-                return null;
+                    return trade;
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 
         public async Task<IEnumerable<Trade>?> AddTradesRangeAsync(IEnumerable<Trade> trades)
         {
-            try
+            using (ProductsManagerDb context = new ProductsManagerDb())
             {
-                await Context.Trades.AddRangeAsync(trades);
-                await Context.SaveChangesAsync();
+                try
+                {
+                    await context.Trades.AddRangeAsync(trades);
+                    await context.SaveChangesAsync();
 
-                return trades;
+                    return trades;
+                }
+                catch
+                {
+                    return null;
+                }
             }
-            catch
+        }
+
+        #endregion
+
+        #region Update
+
+        public async Task<Product?> UpdateProductPrice(int id, decimal price, TradeType type)
+        {
+            using (ProductsManagerDb db = new ProductsManagerDb())
             {
-                return null;
+                var product = await db.Products.FirstOrDefaultAsync(p => p.Id == id);
+
+                if (product is null)
+                {
+                    return null;
+                }
+
+                if (type == TradeType.Export)
+                {
+                    product.ExportPrice = price;
+                }
+                else
+                {
+                    product.ImportPrice = price;
+                }
+
+                db.Update(product);
+                await db.SaveChangesAsync();
+
+                return product;
             }
         }
 
@@ -67,20 +109,23 @@ namespace ProductsManager.Infrastructure.Repositories
         #region Remove
         public Trade? RemoveTrade(int id)
         {
-            Trade trade;
-
-            try
+            using (ProductsManagerDb context = new ProductsManagerDb())
             {
-                trade = Context.Trades.First(t => t.Id == id);
+                Trade trade;
 
-                Context.Remove(trade);
-                Context.SaveChanges();
+                try
+                {
+                    trade = context.Trades.First(t => t.Id == id);
 
-                return trade;
-            }
-            catch
-            {
-                return null;
+                    context.Remove(trade);
+                    context.SaveChanges();
+
+                    return trade;
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
         #endregion

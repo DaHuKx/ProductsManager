@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ProductsManager.Infrastructure.DataBase;
@@ -11,9 +12,11 @@ using ProductsManager.Infrastructure.DataBase;
 namespace ProductsManager.Infrastructure.Migrations
 {
     [DbContext(typeof(ProductsManagerDb))]
-    partial class ProductsManagerDbModelSnapshot : ModelSnapshot
+    [Migration("20250414110728_import_and_export_nullable")]
+    partial class import_and_export_nullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
